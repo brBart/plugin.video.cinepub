@@ -2,6 +2,7 @@ import sys, os, re
 import urllib, urllib2
 import xbmcplugin, xbmcgui
 from resources.lib.BeautifulSoup import BeautifulSoup
+import resources.lib.youtube as yt
 
 
 siteUrl		= 'http://www.cinepub.ro/'
@@ -43,7 +44,7 @@ def listMovies(url):
 
 	list = []
 	#TODO: caching
-	movieList = BeautifulSoup(http_req("http://cinepub.ro/site/films/documentaries/")).find("div", {"class": "categoryThumbnailList"}).contents
+	movieList = BeautifulSoup(httpReq(url)).find("div", {"class": "categoryThumbnailList"}).contents
 	total = len(movieList)
 	current = 0
 	for movie in movieList:
@@ -54,12 +55,7 @@ def listMovies(url):
 		img = link.find("img")
 		if img:
 			img = img['src']
-		#movieElem = {}
-		#movieElem['url'] = url
-		#movieElem['title'] = title
-		#movieElem['thumbnail'] = img
 		addDir(title,url,8,img,folder=False)
-		#list.append(movieElem)
 
 		if progress.iscanceled():
 			sys.exit()
@@ -73,7 +69,28 @@ def listMovies(url):
 	
 	xbmcplugin.endOfDirectory(addonHandle)
 
-def http_req(url):
+def playMovie(url, name, thumb):
+	movies = BeautifulSoup(httpReq(url)).findAll("div", {"class": "btn"})
+	for movie in movies:
+		if movie.text.lower().find("vezi film") > -1:
+			movie = movie.next #skip the diff
+			print movie
+			while movie.name != "a":
+				movie = movie.next
+			break
+	url = movie['href']
+	url = yt.getYoutubeMovie(url)
+
+	win = xbmcgui.Window(10000)
+	win.setProperty('cinepub.playing.title', name.lower())
+	item = xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=thumbnail)
+	item.setInfo(type = "Video", infoLabels = {"title": name})
+	item.setPath(url)
+
+	xbmcplugin.setResolvedUrl(addonHandle, True, item)
+	return True
+
+def httpReq(url):
         req = urllib2.Request(url)
         req.add_header('User-Agent', USER_AGENT)
         req.add_header('Accept', ACCEPT)
@@ -137,3 +154,4 @@ thumbnail = urllib.unquote_plus(params.get('thumbnail', ''))
 
 if mode == 0 or not url or len(url) < 1: mainMenu()
 if mode == 4: listMovies(url)
+if mode == 8: playMovie(url, name, thumbnail)
