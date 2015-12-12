@@ -73,10 +73,15 @@ def playMovie(url, name, thumb):
 	movies = BeautifulSoup(httpReq(url)).findAll("div", {"class": "btn"})
 	for movie in movies:
 		if movie.text.lower().find("vezi film") > -1:
-			movie = movie.next #skip the diff
 			print movie
-			while movie.name != "a":
+			url = None
+			while url == None:
 				movie = movie.next
+				try:
+					if movie.name == "a":
+						break
+				except: #movie doesn't have field name (string)
+					continue
 			break
 	url = movie['href']
 	url = yt.getYoutubeMovie(url)
