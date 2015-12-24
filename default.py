@@ -1,6 +1,7 @@
 import sys, os, re
 import urllib, urllib2
-import xbmcplugin, xbmcgui
+import unicodedata
+import xbmcplugin, xbmcgui, xbmcaddon
 from resources.lib.BeautifulSoup import BeautifulSoup
 import resources.lib.youtube as yt
 
@@ -17,7 +18,7 @@ ACCEPT 		= 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
 
 #TODO
 icon = "DefaultFolder.png"#os.path.join(plugin.getPluginPath(), 'resources', 'media', 'settingsicon.png')
-
+__addon__ = xbmcaddon.Addon()
 addonId = 'plugin.video.cinepub'
 
 addonUrl = sys.argv[0]
@@ -25,22 +26,41 @@ addonHandle = int(sys.argv[1])
 
 print addonUrl
 
+def localise(id):
+	try:
+		string = __addon__.getLocalizedString(id)
+	except Exception as e:
+		print e
+		pass
+		string = ""
+	try:
+		string = unicode(string, "utf8")
+	except:
+		pass
+	try:
+		string = unicodedata.normalize('NFKD', string).encode('ascii', 'ignore')
+	except Exception as e:
+		print e
+		string = str(id)
+	return string
 
+def progressReport(percent):
+	return localise(1008) + str(percent) + "%"
 
 def mainMenu():
-	addDir('Animation',animationUrl,4,icon)
-	addDir('Shorts',shortsUrl,4,icon)
-	addDir('Feature',moviesUrl,4,icon)
-	addDir('Documentaries',documentariesUrl,4,icon)
-	addDir('Settings',siteUrl,99,icon)
+	addDir(localise(1001),animationUrl,4,icon)
+	addDir(localise(1002),shortsUrl,4,icon)
+	addDir(localise(1003),moviesUrl,4,icon)
+	addDir(localise(1004),documentariesUrl,4,icon)
+	addDir(localise(1005),siteUrl,99,icon)
 	#addDir('Clear Cache',siteUrl,18)
 	
 	xbmcplugin.endOfDirectory(addonHandle)
 
 def listMovies(url):
 	progress = xbmcgui.DialogProgress()
-	progress.create('Progress', 'Please wait...')
-	progress.update(1, "", "Loading list - 1%", "")
+	progress.create(localise(1006), localise(1007))
+	progress.update(1, "", progressReport(1), "")
 
 	list = []
 	#TODO: caching
@@ -62,8 +82,7 @@ def listMovies(url):
 
 		current += 1
 		percent = int((current * 100) / total)
-		message = "Loading list - " + str(percent) + "%"
-		progress.update(percent, "", message, "")
+		progress.update(percent, "", progressReport(percent), "")
 
 	progress.close()
 	
